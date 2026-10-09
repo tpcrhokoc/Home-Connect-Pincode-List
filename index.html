@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Searchable Data Dashboard</title>
+  <title>Home Connect Pincode List</title>
   <!-- Load Tailwind CSS & PapaParse CSV Parser -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -11,17 +11,17 @@
 <body class="bg-slate-50 min-h-screen text-slate-800 p-6">
   <div class="max-w-6xl mx-auto">
     <!-- Header -->
-    <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Daily Operations Dashboard</h1>
-        <p class="text-sm text-slate-500">Live data updated daily from Google Sheets</p>
+        <h1 class="text-2xl font-bold text-slate-900">Home Connect Pincode List</h1>
+        <p class="text-sm text-slate-500" id="statusText">Loading live pincode data...</p>
       </div>
       <!-- Search Input -->
       <div class="w-full md:w-72">
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="Search records..." 
+          placeholder="Search pincode or area..." 
           class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
           oninput="filterData()"
         >
@@ -32,14 +32,18 @@
     <div class="bg-white rounded-xl shadow border border-slate-200 overflow-x-auto">
       <table class="w-full text-left border-collapse" id="dataTable">
         <thead id="tableHead" class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold text-sm"></thead>
-        <tbody id="tableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+        <tbody id="tableBody" class="divide-y divide-slate-100 text-sm">
+          <tr>
+            <td class="p-4 text-center text-slate-500">Loading data, please wait...</td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
 
   <script>
-    // Paste your Google Sheets Published CSV Link here:
-    const csvUrl = https://docs.google.com/spreadsheets/d/e/2PACX-1vRuUswpxElfne9KN5y2oKQ2ae49CgbIEQ4O8sM6P5Cji-HCtaqXRznBt_kK_XTS2_6VQEAcYQA-NxtV/pub?output=csv;
+    // Exact Google Sheets Published CSV Link wrapped in quotes:
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRuUswpxElfne9KN5y2oKQ2ae49CgbIEQ4O8sM6P5Cji-HCtaqXRznBt_kK_XTS2_6VQEAcYQA-NxtV/pub?output=csv';
     
     let originalData = [];
     let headers = [];
@@ -50,11 +54,20 @@
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-        if (results.data.length > 0) {
+        if (results.data && results.data.length > 0) {
           headers = Object.keys(results.data[0]);
           originalData = results.data;
+          document.getElementById('statusText').innerText = `Total Records Loaded: ${originalData.length}`;
           renderTable(originalData);
+        } else {
+          document.getElementById('statusText').innerText = 'No records found in spreadsheet.';
+          document.getElementById('tableBody').innerHTML = '<tr><td class="p-4 text-center text-slate-400">The published sheet is empty.</td></tr>';
         }
+      },
+      error: function(err) {
+        console.error('Error loading CSV:', err);
+        document.getElementById('statusText').innerText = 'Error loading spreadsheet data.';
+        document.getElementById('tableBody').innerHTML = '<tr><td class="p-4 text-center text-red-500">Failed to fetch data. Verify that "Publish to Web" is active in Google Sheets.</td></tr>';
       }
     });
 
@@ -64,11 +77,11 @@
       const bodyEl = document.getElementById('tableBody');
 
       // Render Header Row
-      headEl.innerHTML = `<tr>${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr>`;
+      headEl.innerHTML = `<tr>${headers.map(h => `<th class="p-3 border-b">${h}</th>`).join('')}</tr>`;
 
       // Render Data Rows
       if (data.length === 0) {
-        bodyEl.innerHTML = `<tr><td colspan="${headers.length}" class="p-4 text-center text-slate-400">No matching results found.</td></tr>`;
+        bodyEl.innerHTML = `<tr><td colspan="${headers.length}" class="p-4 text-center text-slate-400">No matching pincodes found.</td></tr>`;
         return;
       }
 
